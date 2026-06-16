@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>AD-AS Explorer with Lecture Explanations</title>
+<style>
+  :root{
+    --ink:#0f172a;--muted:#64748b;--bg:#f4f7fb;--card:#ffffff;--line:#dbe3ef;
+    --blue:#2563eb;--blue2:#dbeafe;--purple:#5b21b6;--purple2:#ede9fe;
+    --green:#059669;--green2:#dcfce7;--red:#dc2626;--red2:#fee2e2;--orange:#ea580c;--orange2:#ffedd5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#eef2ff 0%,#f8fafc 50%,#eef2f7 100%);font-family:Inter,Arial,Helvetica,sans-serif;color:var(--ink)}
+  .app{max-width:1320px;margin:0 auto;padding:18px}
+  header{display:flex;align-items:center;justify-content:space-between;gap:18px;background:white;border:1px solid #dbe3ef;border-radius:22px;padding:18px 22px;box-shadow:0 14px 30px rgba(15,23,42,.08);margin-bottom:16px}
+  .brand{display:flex;align-items:center;gap:14px}
+  .logo{width:58px;height:58px;border-radius:16px;background:linear-gradient(135deg,#4f46e5,#9333ea);display:grid;place-items:center;color:white;font-size:32px;font-weight:900;box-shadow:0 10px 20px rgba(79,70,229,.25)}
+  h1{margin:0;font-size:30px;letter-spacing:-.03em}
+  header p{margin:4px 0 0;color:var(--muted);font-size:15px}
+  .pillTop{background:#f5f3ff;color:#4c1d95;border:1px solid #ddd6fe;border-radius:999px;padding:9px 14px;font-weight:800;font-size:13px;white-space:nowrap}
+  .layout{display:grid;grid-template-columns:360px 1fr;gap:16px}
+  .panel{background:rgba(255,255,255,.96);border:1px solid #dbe3ef;border-radius:22px;box-shadow:0 14px 28px rgba(15,23,42,.07);overflow:hidden}
+  .panelTitle{background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:white;padding:13px 16px;font-weight:900;letter-spacing:.02em}
+  .controls{padding:14px}
+  .mainBtn{width:100%;border:1px solid #c7d2fe;background:#eef2ff;border-radius:14px;padding:12px 13px;font-weight:900;color:#312e81;text-align:left;display:flex;justify-content:space-between;align-items:center;cursor:pointer;margin:0 0 10px;font-size:14px}
+  .mainBtn.active{background:#ddd6fe;border-color:#a78bfa;color:#3b0764}
+  .reasonBox{display:none;margin:-4px 0 12px;padding:10px;border:1px dashed #cbd5e1;border-radius:16px;background:#f8fafc}
+  .reasonBox.show{display:block}
+  .reason{width:100%;border:1px solid #e2e8f0;background:white;border-radius:12px;padding:10px 11px;margin:6px 0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-size:13px;text-align:left}
+  .reason:hover,.reason.selected{border-color:#818cf8;background:#eef2ff}
+  .sectionLabel{font-size:13px;font-weight:900;color:#4338ca;margin:12px 2px 8px}
+  .hideBtn{width:100%;border:1px solid #d8b4fe;background:#faf5ff;color:#581c87;border-radius:14px;padding:11px;font-weight:900;cursor:pointer;margin-top:8px}
+  .graphPanel{padding:12px}
+  .graphFrameWrap{height:620px;border:1px solid #dbe3ef;border-radius:18px;overflow:hidden;background:white}
+  iframe{width:100%;height:100%;border:0;background:white}
+  .bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+  .explain{padding:16px}
+  .scenario{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .badge{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:#eef2ff}
+  h2{font-size:20px;margin:0}
+  .chain{background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:14px;line-height:1.65;font-size:15px}
+  .chain b{color:#1e40af}
+  .impactGrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}
+  .impact{border-radius:14px;border:1px solid #e2e8f0;padding:12px;background:white}
+  .impact .k{font-size:12px;color:#64748b;font-weight:900;text-transform:uppercase;letter-spacing:.03em}
+  .impact .v{font-size:20px;font-weight:1000;margin-top:4px}
+  .up{color:var(--green)}.down{color:var(--red)}.same{color:#475569}
+  .note{font-size:13px;color:#475569;margin-top:12px;line-height:1.55}
+  .miniTitle{font-weight:900;margin:0 0 8px}
+  .reset{border:1px solid #cbd5e1;background:white;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;width:100%;margin-top:10px}
+  @media(max-width:980px){.layout{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}.graphFrameWrap{height:520px}header{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <div class="logo">↗</div>
+      <div>
+        <h1>AD-AS Explorer</h1>
+        <p>Use the graph as the visual support, then read the A-Level chain of analysis.</p>
+      </div>
+    </div>
+    <div class="pillTop">Buttons only · reasons hidden by default</div>
+  </header>
+
+  <div class="layout">
+    <aside class="panel">
+      <div class="panelTitle">1. Choose a factor</div>
+      <div class="controls">
+        <div class="sectionLabel">Aggregate Demand: AD = C + I + G + (X − M)</div>
+
+        <button class="mainBtn" data-toggle="c">Consumption (C) <span>＋</span></button>
+        <div id="c" class="reasonBox">
+          <button class="reason" data-case="c_confidence">Consumer confidence rises</button>
+          <button class="reason" data-case="c_tax">Personal income tax falls</button>
+          <button class="reason" data-case="c_wealth">Household wealth rises</button>
+          <button class="reason" data-case="c_interest">Interest rates fall</button>
+        </div>
+
+        <button class="mainBtn" data-toggle="i">Investment (I) <span>＋</span></button>
+        <div id="i" class="reasonBox">
+          <button class="reason" data-case="i_confidence">Business expectations improve</button>
+          <button class="reason" data-case="i_interest">Interest rates fall</button>
+          <button class="reason" data-case="i_grant">Government investment grants rise</button>
+          <button class="reason" data-case="i_tax">Corporate tax falls</button>
+        </div>
+
+        <button class="mainBtn" data-toggle="g">Government expenditure (G) <span>＋</span></button>
+        <div id="g" class="reasonBox">
+          <button class="reason" data-case="g_infra">Infrastructure spending rises</button>
+          <button class="reason" data-case="g_fiscal">Expansionary fiscal policy</button>
+        </div>
+
+        <button class="mainBtn" data-toggle="xm">Net exports (X − M) <span>＋</span></button>
+        <div id="xm" class="reasonBox">
+          <button class="reason" data-case="x_foreign">Foreign income rises</button>
+          <button class="reason" data-case="x_sgd">Exchange rate depreciation improves competitiveness</button>
+          <button class="reason" data-case="m_imports">Import expenditure rises</button>
+        </div>
+
+        <div class="sectionLabel">Aggregate Supply</div>
+
+        <button class="mainBtn" data-toggle="sras">Short-run AS <span>＋</span></button>
+        <div id="sras" class="reasonBox">
+          <button class="reason" data-case="sras_oil_down">Oil / raw material costs fall</button>
+          <button class="reason" data-case="sras_wage_up">Wage costs rise</button>
+          <button class="reason" data-case="sras_productivity">Productivity improves</button>
+        </div>
+
+        <button class="mainBtn" data-toggle="lras">Long-run AS <span>＋</span></button>
+        <div id="lras" class="reasonBox">
+          <button class="reason" data-case="lras_tech">Technology improves</button>
+          <button class="reason" data-case="lras_education">Education and skills improve</button>
+          <button class="reason" data-case="lras_capital">Capital stock increases</button>
+        </div>
+
+        <button id="hideAll" class="hideBtn">Hide reasons</button>
+        <button id="reset" class="reset">Reset graph</button>
+      </div>
+    </aside>
+
+    <main class="panel">
+      <div class="panelTitle">2. Graph support</div>
+      <div class="graphPanel">
+        <div class="graphFrameWrap">
+          <iframe id="graphFrame" srcdoc="&lt;!DOCTYPE html&gt;
+&lt;html lang=&quot;en&quot;&gt;
+&lt;head&gt;
+&lt;meta charset=&quot;UTF-8&quot; /&gt;
+&lt;meta name=&quot;viewport&quot; content=&quot;width=device-width, initial-scale=1.0&quot; /&gt;
+&lt;title&gt;AD-AS Shift Diagram&lt;/title&gt;
+&lt;style&gt;
+  :root{
+    --ink:#111827;
+    --muted:#6b7280;
+    --bg:#eef2f7;
+    --card:#ffffff;
+    --line:#111827;
+    --guide:#9ca3af;
+    --ad1:#1d4ed8;
+    --ad2:#60a5fa;
+    --as1:#111827;
+    --as2:#dc2626;
+    --green:#059669;
+    --panel:#f8fafc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:linear-gradient(180deg,#e8eef8 0%,#f6f7fb 45%,#eef2f7 100%);font-family:Inter,Arial,Helvetica,sans-serif;color:var(--ink)}
+  .app{max-width:1180px;margin:0 auto;padding:16px}
+  header{background:linear-gradient(135deg,#0b1f4d,#173b83);color:white;border-radius:20px;padding:16px 20px;text-align:center;margin-bottom:14px;box-shadow:0 14px 28px rgba(15,23,42,.16)}
+  header h1{margin:0;font-size:25px;letter-spacing:.2px}
+  header p{margin:6px 0 0;font-size:13px;opacity:.86}
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px}
+  .control{background:rgba(255,255,255,.92);border:1px solid rgba(148,163,184,.45);border-radius:18px;padding:13px 15px;box-shadow:0 8px 20px rgba(15,23,42,.08)}
+  .control h3{margin:0 0 9px;font-size:15px;text-align:center}
+  .row{display:grid;grid-template-columns:70px 1fr 70px;gap:8px;align-items:center;font-weight:800;font-size:12px;color:#374151}
+  .row span:first-child{text-align:right}.row span:last-child{text-align:left}
+  input[type=range]{width:100%;accent-color:#2563eb;cursor:pointer}
+  .value{text-align:center;font-size:12px;color:var(--muted);margin-top:5px;min-height:18px;font-weight:700}
+  .canvasWrap{background:var(--card);border:1px solid rgba(148,163,184,.45);border-radius:22px;box-shadow:0 18px 36px rgba(15,23,42,.12);padding:14px;overflow:auto}
+  svg{display:block;width:100%;height:auto;min-width:820px;background:#fff;border-radius:16px}
+  .grid{stroke:#e5e7eb;stroke-width:1;fill:none}
+  .axis{stroke:var(--line);stroke-width:2.8;fill:none;stroke-linecap:round}
+  .axisLabel{font-family:Georgia,&#x27;Times New Roman&#x27;,serif;font-size:25px;fill:#111827;font-weight:600}
+  .curveBase{stroke:var(--as1);stroke-width:4.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .curveShift{stroke:var(--as2);stroke-width:4.4;fill:none;stroke-linecap:round;stroke-linejoin:round}
+  .adBase{stroke:var(--ad1);stroke-width:4.2;stroke-linecap:round}
+  .adShift{stroke:var(--ad2);stroke-width:4.2;stroke-linecap:round}
+  .dash{stroke:var(--guide);stroke-width:1.6;stroke-dasharray:7 7;fill:none}
+  .label{font-family:Georgia,&#x27;Times New Roman&#x27;,serif;font-size:25px;fill:#111827;font-weight:700}
+  .tiny{font-size:16px}
+  .hint{font-family:Inter,Arial,Helvetica,sans-serif;font-size:13px;fill:#4b5563;font-weight:700}
+  .tag{font-family:Inter,Arial,Helvetica,sans-serif;font-size:12px;fill:#111827;font-weight:800}
+  .arrowAD{stroke:var(--ad1);stroke-width:2.8;marker-end:url(#arrowAD);stroke-linecap:round}
+  .arrowAS{stroke:var(--as2);stroke-width:2.8;marker-end:url(#arrowAS);stroke-linecap:round}
+  .eqRing1{stroke:#111827;stroke-width:2.2;fill:white}
+  .eqRing2{stroke:#dc2626;stroke-width:2.2;fill:white}
+  .legend{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:10px}.pill{background:#fff;border:1px solid #d1d5db;border-radius:999px;padding:7px 12px;font-size:12px;font-weight:800;color:#374151}.swatch{display:inline-block;width:10px;height:10px;border-radius:999px;margin-right:6px;vertical-align:-1px}.s1{background:var(--ad1)}.s2{background:var(--as2)}.s3{background:var(--guide)}
+  @media (max-width:800px){.controls{grid-template-columns:1fr}.app{padding:8px}header h1{font-size:20px}.canvasWrap{padding:6px}svg{min-width:760px}.row{grid-template-columns:60px 1fr 60px}}
+&lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+&lt;div class=&quot;app&quot;&gt;
+  &lt;header&gt;
+    &lt;h1&gt;AD-AS Shift Diagram&lt;/h1&gt;
+    &lt;p&gt;Clean 9570-style AS curve with clear equilibrium guides and no messy overlap.&lt;/p&gt;
+  &lt;/header&gt;
+
+  &lt;section class=&quot;controls&quot;&gt;
+    &lt;div class=&quot;control&quot;&gt;&lt;h3&gt;AD Shift&lt;/h3&gt;&lt;div class=&quot;row&quot;&gt;&lt;span&gt;Left&lt;/span&gt;&lt;input id=&quot;ad&quot; type=&quot;range&quot; min=&quot;-100&quot; max=&quot;100&quot; value=&quot;0&quot;&gt;&lt;span&gt;Right&lt;/span&gt;&lt;/div&gt;&lt;div id=&quot;adText&quot; class=&quot;value&quot;&gt;No change&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;control&quot;&gt;&lt;h3&gt;SRAS Shift&lt;/h3&gt;&lt;div class=&quot;row&quot;&gt;&lt;span&gt;Down&lt;/span&gt;&lt;input id=&quot;sras&quot; type=&quot;range&quot; min=&quot;-100&quot; max=&quot;100&quot; value=&quot;0&quot;&gt;&lt;span&gt;Up&lt;/span&gt;&lt;/div&gt;&lt;div id=&quot;srasText&quot; class=&quot;value&quot;&gt;No change&lt;/div&gt;&lt;/div&gt;
+    &lt;div class=&quot;control&quot;&gt;&lt;h3&gt;LRAS Shift&lt;/h3&gt;&lt;div class=&quot;row&quot;&gt;&lt;span&gt;Left&lt;/span&gt;&lt;input id=&quot;lras&quot; type=&quot;range&quot; min=&quot;-100&quot; max=&quot;100&quot; value=&quot;0&quot;&gt;&lt;span&gt;Right&lt;/span&gt;&lt;/div&gt;&lt;div id=&quot;lrasText&quot; class=&quot;value&quot;&gt;No change&lt;/div&gt;&lt;/div&gt;
+  &lt;/section&gt;
+
+  &lt;div class=&quot;canvasWrap&quot;&gt;
+    &lt;svg id=&quot;svg&quot; viewBox=&quot;0 0 1100 700&quot; aria-label=&quot;AD-AS diagram&quot;&gt;&lt;/svg&gt;
+  &lt;/div&gt;
+
+  &lt;div class=&quot;legend&quot;&gt;
+    &lt;div class=&quot;pill&quot;&gt;&lt;span class=&quot;swatch s1&quot;&gt;&lt;/span&gt;AD curve&lt;/div&gt;
+    &lt;div class=&quot;pill&quot;&gt;&lt;span class=&quot;swatch s2&quot;&gt;&lt;/span&gt;Shifted curve&lt;/div&gt;
+    &lt;div class=&quot;pill&quot;&gt;&lt;span class=&quot;swatch s3&quot;&gt;&lt;/span&gt;Price/output guide lines&lt;/div&gt;
+    &lt;div class=&quot;pill&quot;&gt;SRAS shifts vertically · LRAS shifts horizontally&lt;/div&gt;
+  &lt;/div&gt;
+&lt;/div&gt;
+
+&lt;script&gt;
+const svg = document.getElementById(&#x27;svg&#x27;);
+const adSlider = document.getElementById(&#x27;ad&#x27;), srasSlider = document.getElementById(&#x27;sras&#x27;), lrasSlider = document.getElementById(&#x27;lras&#x27;);
+const adText = document.getElementById(&#x27;adText&#x27;), srasText = document.getElementById(&#x27;srasText&#x27;), lrasText = document.getElementById(&#x27;lrasText&#x27;);
+const NS=&#x27;http://www.w3.org/2000/svg&#x27;;
+
+function el(name, attrs={}, parent=svg){
+  const e=document.createElementNS(NS,name);
+  for(const [k,v] of Object.entries(attrs)) e.setAttribute(k,v);
+  parent.appendChild(e);
+  return e;
+}
+function text(x,y,t,cls=&#x27;label&#x27;,anchor=&#x27;middle&#x27;){
+  const e=el(&#x27;text&#x27;,{x,y,class:cls,&#x27;text-anchor&#x27;:anchor});
+  e.textContent=t;
+  return e;
+}
+function subText(x,y,main,sub,cls=&#x27;label&#x27;,anchor=&#x27;middle&#x27;){
+  const e=el(&#x27;text&#x27;,{x,y,class:cls,&#x27;text-anchor&#x27;:anchor});
+  const a=el(&#x27;tspan&#x27;,{},e); a.textContent=main;
+  const b=el(&#x27;tspan&#x27;,{baselineShift:&#x27;sub&#x27;,class:&#x27;tiny&#x27;},e); b.textContent=sub;
+  return e;
+}
+
+function asPoint(t,xShift=0,yShift=0){
+  // Smooth A-Level style AS: flat at low output, then bends upward, then vertical at Yf.
+  if(t &lt; 0.34){
+    const u=t/0.34;
+    return {x:250 + (510-250)*u + xShift, y:455 + yShift};
+  }
+  if(t &lt; 0.88){
+    const u=(t-0.34)/0.54;
+    const p0=[510,455], p1=[605,455], p2=[708,365], p3=[735,260];
+    const x=(1-u)**3*p0[0]+3*(1-u)**2*u*p1[0]+3*(1-u)*u*u*p2[0]+u**3*p3[0];
+    const y=(1-u)**3*p0[1]+3*(1-u)**2*u*p1[1]+3*(1-u)*u*u*p2[1]+u**3*p3[1];
+    return {x:x+xShift, y:y+yShift};
+  }
+  const u=(t-0.88)/0.12;
+  return {x:735+xShift, y:260 - 130*u + yShift};
+}
+function curvePath(xShift=0,yShift=0){
+  const p=[];
+  for(let i=0;i&lt;=120;i++){ const pt=asPoint(i/120,xShift,yShift); p.push(`${i?&#x27;L&#x27;:&#x27;M&#x27;} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`); }
+  return p.join(&#x27; &#x27;);
+}
+function adLine(xShift=0){ return {x1:415+xShift,y1:130,x2:695+xShift,y2:535}; }
+function lineYAtX(L,x){ const m=(L.y2-L.y1)/(L.x2-L.x1); return L.y1 + m*(x-L.x1); }
+function lineXAtY(L,y){ const m=(L.y2-L.y1)/(L.x2-L.x1); return L.x1 + (y-L.y1)/m; }
+function asYAtX(x,xShift=0,yShift=0){
+  let best={y:0,d:Infinity};
+  // Avoid the vertical LRAS section so the arrow sits beside the curved AS segment.
+  for(let i=0;i&lt;=792;i++){
+    const pt=asPoint(i/900,xShift,yShift);
+    const d=Math.abs(pt.x-x);
+    if(d&lt;best.d) best={y:pt.y,d};
+  }
+  return best.y;
+}
+function distToLine(L,x,y){ return Math.abs((L.y2-L.y1)*x-(L.x2-L.x1)*y+L.x2*L.y1-L.y2*L.x1)/Math.hypot(L.y2-L.y1,L.x2-L.x1); }
+function intersectionApprox(adShift, asX, asY){
+  const L=adLine(adShift); let best={x:0,y:0,d:Infinity};
+  for(let i=0;i&lt;=900;i++){
+    const pt=asPoint(i/900,asX,asY);
+    const d=distToLine(L,pt.x,pt.y);
+    if(d&lt;best.d) best={...pt,d};
+  }
+  return best;
+}
+function roundedLabel(x,y,label,strokeClass){
+  el(&#x27;circle&#x27;,{cx:x,cy:y,r:8,class:strokeClass});
+}
+function drawGuides(pt,pLabel,yLabel,ringClass){
+  el(&#x27;line&#x27;,{x1:185,y1:pt.y,x2:pt.x,y2:pt.y,class:&#x27;dash&#x27;});
+  el(&#x27;line&#x27;,{x1:pt.x,y1:pt.y,x2:pt.x,y2:555,class:&#x27;dash&#x27;});
+  text(158,pt.y+8,pLabel,&#x27;label&#x27;,&#x27;end&#x27;);
+  text(pt.x,590,yLabel,&#x27;label&#x27;);
+  roundedLabel(pt.x,pt.y,`${pLabel}, ${yLabel}`,ringClass);
+}
+function drawGrid(){
+  for(let x=285;x&lt;=885;x+=100) el(&#x27;line&#x27;,{x1:x,y1:110,x2:x,y2:555,class:&#x27;grid&#x27;});
+  for(let y=155;y&lt;=505;y+=70) el(&#x27;line&#x27;,{x1:185,y1:y,x2:930,y2:y,class:&#x27;grid&#x27;});
+}
+
+function draw(){
+  svg.innerHTML=&#x27;&#x27;;
+  const defs=el(&#x27;defs&#x27;);
+  const markerAD=el(&#x27;marker&#x27;,{id:&#x27;arrowAD&#x27;,viewBox:&#x27;0 0 10 10&#x27;,refX:&#x27;9&#x27;,refY:&#x27;5&#x27;,markerWidth:&#x27;7&#x27;,markerHeight:&#x27;7&#x27;,orient:&#x27;auto-start-reverse&#x27;},defs);
+  el(&#x27;path&#x27;,{d:&#x27;M 0 0 L 10 5 L 0 10 z&#x27;,fill:&#x27;#1d4ed8&#x27;},markerAD);
+  const markerAS=el(&#x27;marker&#x27;,{id:&#x27;arrowAS&#x27;,viewBox:&#x27;0 0 10 10&#x27;,refX:&#x27;9&#x27;,refY:&#x27;5&#x27;,markerWidth:&#x27;7&#x27;,markerHeight:&#x27;7&#x27;,orient:&#x27;auto-start-reverse&#x27;},defs);
+  el(&#x27;path&#x27;,{d:&#x27;M 0 0 L 10 5 L 0 10 z&#x27;,fill:&#x27;#dc2626&#x27;},markerAS);
+  const markerAxis=el(&#x27;marker&#x27;,{id:&#x27;arrowAxis&#x27;,viewBox:&#x27;0 0 10 10&#x27;,refX:&#x27;9&#x27;,refY:&#x27;5&#x27;,markerWidth:&#x27;7&#x27;,markerHeight:&#x27;7&#x27;,orient:&#x27;auto-start-reverse&#x27;},defs);
+  el(&#x27;path&#x27;,{d:&#x27;M 0 0 L 10 5 L 0 10 z&#x27;,fill:&#x27;#111827&#x27;},markerAxis);
+
+  const adVal=+adSlider.value, srVal=+srasSlider.value, lrVal=+lrasSlider.value;
+  const adX = adVal*1.15;
+  const srasY = -srVal*1.05;
+  const lrasX = lrVal*1.15;
+
+  drawGrid();
+
+  // axes
+  el(&#x27;line&#x27;,{x1:185,y1:555,x2:930,y2:555,class:&#x27;axis&#x27;,&#x27;marker-end&#x27;:&#x27;url(#arrowAxis)&#x27;});
+  el(&#x27;line&#x27;,{x1:185,y1:555,x2:185,y2:85,class:&#x27;axis&#x27;,&#x27;marker-end&#x27;:&#x27;url(#arrowAxis)&#x27;});
+  text(173,580,&#x27;0&#x27;,&#x27;axisLabel&#x27;,&#x27;end&#x27;);
+  text(98,124,&#x27;General&#x27;,&#x27;axisLabel&#x27;); text(98,164,&#x27;Price&#x27;,&#x27;axisLabel&#x27;); text(98,204,&#x27;Level&#x27;,&#x27;axisLabel&#x27;);
+  text(855,650,&#x27;Real National Output&#x27;,&#x27;axisLabel&#x27;);
+
+  // AS curves behind AD for clean intersections
+  el(&#x27;path&#x27;,{d:curvePath(0,0),class:&#x27;curveBase&#x27;}); subText(745,124,&#x27;AS&#x27;,&#x27;1&#x27;,&#x27;label&#x27;);
+  let shiftedAS=false;
+  if(Math.abs(srasY)&gt;3){
+    shiftedAS=true;
+    el(&#x27;path&#x27;,{d:curvePath(0,srasY),class:&#x27;curveShift&#x27;});
+    subText(694,154+srasY,&#x27;AS&#x27;,&#x27;2&#x27;,&#x27;label&#x27;);
+  }
+  if(Math.abs(lrasX)&gt;3){
+    shiftedAS=true;
+    el(&#x27;path&#x27;,{d:curvePath(lrasX,0),class:&#x27;curveShift&#x27;});
+    subText(745+lrasX,124,&#x27;AS&#x27;,&#x27;2&#x27;,&#x27;label&#x27;);
+  }
+
+  // AD curves
+  const L1=adLine(0); el(&#x27;line&#x27;,{...L1,class:&#x27;adBase&#x27;}); subText(402,120,&#x27;AD&#x27;,&#x27;1&#x27;,&#x27;label&#x27;,&#x27;end&#x27;);
+  if(Math.abs(adX)&gt;3){ const L2=adLine(adX); el(&#x27;line&#x27;,{...L2,class:&#x27;adShift&#x27;}); subText(402+adX,120,&#x27;AD&#x27;,&#x27;2&#x27;,&#x27;label&#x27;,&#x27;end&#x27;); }
+
+  // Equilibrium guide lines
+  const base=intersectionApprox(0,0,0);
+  let second=null;
+  if(Math.abs(adX)&gt;3) second=intersectionApprox(adX,0,0);
+  else if(Math.abs(srasY)&gt;3) second=intersectionApprox(0,0,srasY);
+  else if(Math.abs(lrasX)&gt;3) second=intersectionApprox(0,lrasX,0);
+
+  drawGuides(base,&#x27;P₁&#x27;,&#x27;Y₁&#x27;,&#x27;eqRing1&#x27;);
+  if(second) drawGuides(second,&#x27;P₂&#x27;,&#x27;Y₂&#x27;,&#x27;eqRing2&#x27;);
+
+  // Yf guide on top so it is obvious
+  el(&#x27;line&#x27;,{x1:735,y1:130,x2:735,y2:555,class:&#x27;dash&#x27;}); text(735,590,&#x27;Yf₁&#x27;,&#x27;label&#x27;);
+  if(Math.abs(lrasX)&gt;3){ el(&#x27;line&#x27;,{x1:735+lrasX,y1:130,x2:735+lrasX,y2:555,class:&#x27;dash&#x27;}); text(735+lrasX,590,&#x27;Yf₂&#x27;,&#x27;label&#x27;); }
+
+  // Shift arrows float between the initial and final curves. They start from the old curve&#x27;s side
+  // and end before the new curve, so the arrowheads do not touch either curve.
+  const gap = 18;
+  if(Math.abs(adX)&gt;36){
+    const y=248;
+    const xOld=lineXAtY(adLine(0),y);
+    const xNew=lineXAtY(adLine(adX),y);
+    const dir=Math.sign(xNew-xOld);
+    el(&#x27;line&#x27;,{x1:xOld+dir*gap,y1:y,x2:xNew-dir*gap,y2:y,class:&#x27;arrowAD&#x27;});
+  }
+  if(Math.abs(srasY)&gt;36){
+    const x=655;
+    const yOld=asYAtX(x,0,0);
+    const yNew=asYAtX(x,0,srasY);
+    const dir=Math.sign(yNew-yOld);
+    el(&#x27;line&#x27;,{x1:x,y1:yOld+dir*gap,x2:x,y2:yNew-dir*gap,class:&#x27;arrowAS&#x27;});
+  }
+  if(Math.abs(lrasX)&gt;36){
+    const y=210;
+    const xOld=735;
+    const xNew=735+lrasX;
+    const dir=Math.sign(xNew-xOld);
+    el(&#x27;line&#x27;,{x1:xOld+dir*gap,y1:y,x2:xNew-dir*gap,y2:y,class:&#x27;arrowAS&#x27;});
+  }
+
+  adText.textContent = adVal&lt; -8 ? &#x27;AD decreases: AD₂ is left of AD₁&#x27; : adVal&gt;8 ? &#x27;AD increases: AD₂ is right of AD₁&#x27; : &#x27;No change&#x27;;
+  srasText.textContent = srVal&lt; -8 ? &#x27;SRAS increases: AS₂ shifts down&#x27; : srVal&gt;8 ? &#x27;SRAS decreases: AS₂ shifts up&#x27; : &#x27;No change&#x27;;
+  lrasText.textContent = lrVal&lt; -8 ? &#x27;LRAS decreases: Yf shifts left&#x27; : lrVal&gt;8 ? &#x27;LRAS increases: Yf shifts right&#x27; : &#x27;No change&#x27;;
+}
+[adSlider,srasSlider,lrasSlider].forEach(s=&gt;s.addEventListener(&#x27;input&#x27;,draw));
+draw();
+&lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;"></iframe>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div class="bottom">
+    <section class="panel explain">
+      <div class="scenario">
+        <div id="icon" class="badge">📊</div>
+        <div>
+          <h2 id="title">Select a factor</h2>
+          <div id="subtitle" class="note" style="margin:2px 0 0">The graph will shift AD, SRAS or LRAS. The explanation will appear here.</div>
+        </div>
+      </div>
+      <div id="chain" class="chain">
+        Choose a reason from the left panel. The graph uses the attached graph code unchanged; the buttons only set the graph values and add explanations.
+      </div>
+      <div class="note">For A-Level answers, always write the chain: factor → component of AD/AS → curve shift → change in real national output/GDP → growth/unemployment/GPL effect.</div>
+    </section>
+
+    <section class="panel explain">
+      <p class="miniTitle">3. Impact summary</p>
+      <div class="impactGrid">
+        <div class="impact"><div class="k">Real GDP / Output</div><div id="yImpact" class="v same">No change</div></div>
+        <div class="impact"><div class="k">Economic growth</div><div id="growthImpact" class="v same">No change</div></div>
+        <div class="impact"><div class="k">Unemployment</div><div id="uImpact" class="v same">No change</div></div>
+        <div class="impact"><div class="k">GPL / Inflation</div><div id="pImpact" class="v same">No change</div></div>
+      </div>
+      <div id="examNote" class="note">The graph is a supplement. The main learning point is the written chain of analysis.</div>
+    </section>
+  </div>
+</div>
+
+<script>
+const cases = {
+  c_confidence: {
+    icon:'🛍️', title:'Consumer confidence rises', subtitle:'Consumption increases, so AD shifts right.',
+    graph:{ad:80,sras:0,lras:0},
+    chain:'Consumers expect higher future income / employment and become more willing to spend. <br>→ <b>Consumption (C) rises</b> <br>→ <b>AD = C + I + G + (X − M)</b> rises <br>→ AD shifts right from AD₁ to AD₂ <br>→ Real national output / GDP rises from Y₁ to Y₂ <br>→ Actual economic growth occurs, unemployment falls, and GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'],
+    note:'Use when explaining demand-side actual growth.'
+  },
+  c_tax: {
+    icon:'💵', title:'Personal income tax falls', subtitle:'Disposable income rises, so C and AD rise.',
+    graph:{ad:75,sras:0,lras:0},
+    chain:'A fall in direct taxes raises households’ disposable income. <br>→ Purchasing power rises <br>→ <b>Consumption (C) rises</b> <br>→ AD rises and shifts right <br>→ Firms produce more to meet higher demand <br>→ Real GDP rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'This is part of expansionary fiscal policy.'
+  },
+  c_wealth: {
+    icon:'🏠', title:'Household wealth rises', subtitle:'Wealth effect raises consumption.',
+    graph:{ad:70,sras:0,lras:0},
+    chain:'Higher asset prices make households feel wealthier. <br>→ They spend more and save less <br>→ <b>Consumption (C) rises</b> <br>→ AD shifts right <br>→ Real GDP and actual growth rise <br>→ Unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Good for property/stock market examples.'
+  },
+  c_interest: {
+    icon:'🏦', title:'Interest rates fall', subtitle:'Borrowing is cheaper and saving is less attractive.',
+    graph:{ad:75,sras:0,lras:0},
+    chain:'Lower interest rates reduce the cost of borrowing and reduce the reward for saving. <br>→ Households spend more on big-ticket items <br>→ <b>Consumption (C) rises</b> <br>→ AD shifts right <br>→ Real output rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'For Singapore, interest rate effects may depend on exchange-rate monetary policy context.'
+  },
+  i_confidence: {
+    icon:'🏭', title:'Business expectations improve', subtitle:'Investment rises, so AD shifts right.',
+    graph:{ad:85,sras:0,lras:0},
+    chain:'Firms expect higher future demand and profits. <br>→ Expected returns from investment rise <br>→ <b>Investment (I) rises</b> <br>→ AD shifts right <br>→ Real GDP rises by a multiplied amount <br>→ Actual growth rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Investment can also raise LRAS over time if it increases productive capacity.'
+  },
+  i_interest: {
+    icon:'📉', title:'Interest rates fall', subtitle:'Investment becomes more profitable.',
+    graph:{ad:75,sras:0,lras:0},
+    chain:'Lower interest rates reduce the cost of borrowed funds. <br>→ More investment projects become profitable <br>→ <b>Investment (I) rises</b> <br>→ AD shifts right <br>→ Real GDP rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'This links to the MEI explanation.'
+  },
+  i_grant: {
+    icon:'🏗️', title:'Government investment grants rise', subtitle:'Lower capital cost encourages investment.',
+    graph:{ad:70,sras:0,lras:0},
+    chain:'Government grants reduce the cost of capital for firms. <br>→ Expected net returns rise <br>→ <b>Investment (I) rises</b> <br>→ AD shifts right <br>→ Real GDP and actual growth rise; unemployment falls; GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'If investment improves capacity, LRAS can rise in the long run.'
+  },
+  i_tax: {
+    icon:'🧾', title:'Corporate tax falls', subtitle:'Expected after-tax returns rise.',
+    graph:{ad:70,sras:0,lras:0},
+    chain:'A fall in corporate tax raises expected after-tax profits. <br>→ Firms are more willing to invest <br>→ <b>Investment (I) rises</b> <br>→ AD shifts right <br>→ Real GDP rises, unemployment falls and GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Can be used as supply-side too if it encourages capacity expansion.'
+  },
+  g_infra: {
+    icon:'🚇', title:'Infrastructure spending rises', subtitle:'Government expenditure directly raises AD.',
+    graph:{ad:90,sras:0,lras:0},
+    chain:'Government spends more on infrastructure and final goods/services. <br>→ <b>Government expenditure (G) rises</b> <br>→ AD shifts right <br>→ Firms raise output to meet demand <br>→ Real GDP rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Infrastructure may also improve LRAS if it raises productive capacity.'
+  },
+  g_fiscal: {
+    icon:'🏛️', title:'Expansionary fiscal policy', subtitle:'Higher G and/or lower taxes raise AD.',
+    graph:{ad:95,sras:0,lras:0},
+    chain:'The government increases spending and/or reduces taxes. <br>→ G rises and/or C/I rises <br>→ <b>AD rises</b> <br>→ AD shifts right <br>→ Real GDP rises by a multiplied amount <br>→ Actual growth rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Add multiplier effect for stronger A-Level analysis.'
+  },
+  x_foreign: {
+    icon:'🌍', title:'Foreign income rises', subtitle:'Export demand rises.',
+    graph:{ad:80,sras:0,lras:0},
+    chain:'Trading partners experience higher income. <br>→ They buy more imports from Singapore <br>→ <b>Export revenue (X) rises</b> <br>→ Net exports (X − M) rise <br>→ AD shifts right <br>→ Real GDP rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Very useful for Singapore as a small and open economy.'
+  },
+  x_sgd: {
+    icon:'💱', title:'Exchange rate depreciation improves competitiveness', subtitle:'X rises and M may fall.',
+    graph:{ad:75,sras:0,lras:0},
+    chain:'A depreciation makes exports cheaper to foreigners and imports more expensive domestically. <br>→ Export revenue may rise and import expenditure may fall <br>→ <b>Net exports (X − M) rise</b> <br>→ AD shifts right <br>→ Real GDP rises, unemployment falls, GPL rises.',
+    impacts:['Increases','Increases','Falls','Rises'], classes:['up','up','down','up'], note:'Mention Marshall-Lerner condition if the question is on exchange rates.'
+  },
+  m_imports: {
+    icon:'🛬', title:'Import expenditure rises', subtitle:'Net exports fall, so AD shifts left.',
+    graph:{ad:-80,sras:0,lras:0},
+    chain:'Households and firms spend more on foreign goods and services. <br>→ <b>Import expenditure (M) rises</b> <br>→ Net exports (X − M) fall <br>→ AD shifts left from AD₁ to AD₂ <br>→ Real GDP falls, unemployment rises and GPL falls / disinflationary pressure occurs.',
+    impacts:['Falls','Falls','Rises','Falls'], classes:['down','down','up','down'], note:'Imports are also a withdrawal from the circular flow.'
+  },
+  sras_oil_down: {
+    icon:'🛢️', title:'Oil / raw material costs fall', subtitle:'Cost of production falls, so SRAS increases.',
+    graph:{ad:0,sras:-80,lras:0},
+    chain:'Oil and raw materials are key inputs for many firms. <br>→ Cost of production falls <br>→ Firms are willing and able to produce more at each GPL <br>→ <b>SRAS increases and shifts down/right</b> <br>→ Real GDP rises and GPL falls <br>→ Actual growth rises and unemployment falls.',
+    impacts:['Increases','Increases','Falls','Falls'], classes:['up','up','down','down'], note:'This is actual growth caused by an increase in SRAS.'
+  },
+  sras_wage_up: {
+    icon:'💼', title:'Wage costs rise', subtitle:'Cost of production rises, so SRAS decreases.',
+    graph:{ad:0,sras:80,lras:0},
+    chain:'Higher wage costs raise firms’ cost of production. <br>→ Firms are less willing and able to produce at each GPL <br>→ <b>SRAS decreases and shifts up/left</b> <br>→ Real GDP falls and GPL rises <br>→ Unemployment rises and cost-push inflation occurs.',
+    impacts:['Falls','Falls','Rises','Rises'], classes:['down','down','up','up'], note:'This is a supply-side cause of falling national output.'
+  },
+  sras_productivity: {
+    icon:'⚙️', title:'Productivity improves', subtitle:'Unit cost falls, so SRAS increases.',
+    graph:{ad:0,sras:-75,lras:0},
+    chain:'Workers or machines produce more output per unit of input. <br>→ Unit cost of production falls <br>→ <b>SRAS increases</b> <br>→ Real GDP rises and GPL falls <br>→ Actual growth rises and unemployment tends to fall.',
+    impacts:['Increases','Increases','Falls','Falls'], classes:['up','up','down','down'], note:'If productivity improvement is sustained, LRAS may also rise.'
+  },
+  lras_tech: {
+    icon:'🤖', title:'Technology improves', subtitle:'Productive capacity rises, so LRAS shifts right.',
+    graph:{ad:0,sras:0,lras:80},
+    chain:'Better technology raises the quality/productivity of factors of production. <br>→ Productive capacity rises <br>→ <b>LRAS increases and Yf shifts right</b> <br>→ Potential growth occurs <br>→ Real GDP can rise with lower inflationary pressure.',
+    impacts:['May increase','Potential rises','May fall','Falls / stable'], classes:['up','up','down','down'], note:'This is potential economic growth.'
+  },
+  lras_education: {
+    icon:'🎓', title:'Education and skills improve', subtitle:'Quality of labour rises.',
+    graph:{ad:0,sras:0,lras:75},
+    chain:'Education and training improve labour quality. <br>→ Labour productivity and productive capacity rise <br>→ <b>LRAS shifts right</b> <br>→ Potential output Yf rises <br>→ The economy can sustain higher actual growth without strong inflation.',
+    impacts:['May increase','Potential rises','May fall','Falls / stable'], classes:['up','up','down','down'], note:'Useful for sustainable growth and inclusive growth discussions.'
+  },
+  lras_capital: {
+    icon:'🏭', title:'Capital stock increases', subtitle:'Quantity of capital rises.',
+    graph:{ad:0,sras:0,lras:85},
+    chain:'More capital goods such as machinery, plants and infrastructure increase productive capacity. <br>→ <b>LRAS shifts right</b> <br>→ Yf rises <br>→ Potential growth occurs <br>→ Future actual growth can be sustained with less demand-pull inflation.',
+    impacts:['May increase','Potential rises','May fall','Falls / stable'], classes:['up','up','down','down'], note:'Links investment today to potential growth later.'
+  }
+};
+
+function getFrameDoc(){
+  const f=document.getElementById('graphFrame');
+  return f.contentDocument || f.contentWindow.document;
+}
+function setGraph(vals){
+  const doc=getFrameDoc();
+  ['ad','sras','lras'].forEach(id=>{
+    const el=doc.getElementById(id);
+    if(el){ el.value = vals[id] ?? 0; el.dispatchEvent(new Event('input',{bubbles:true})); }
+  });
+}
+function cleanFrame(){
+  const doc=getFrameDoc();
+  const style=doc.createElement('style');
+  style.textContent = `
+    header,.controls,.legend{display:none!important}
+    body{background:#fff!important}
+    .app{padding:0!important;max-width:none!important}
+    .canvasWrap{border:0!important;box-shadow:none!important;border-radius:0!important;padding:6px!important}
+    svg{min-width:820px!important}
+  `;
+  doc.head.appendChild(style);
+  setGraph({ad:0,sras:0,lras:0});
+}
+document.getElementById('graphFrame').addEventListener('load', cleanFrame);
+
+document.querySelectorAll('.mainBtn').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const box=document.getElementById(btn.dataset.toggle);
+    box.classList.toggle('show');
+    btn.classList.toggle('active');
+  });
+});
+document.getElementById('hideAll').addEventListener('click',()=>{
+  document.querySelectorAll('.reasonBox').forEach(b=>b.classList.remove('show'));
+  document.querySelectorAll('.mainBtn').forEach(b=>b.classList.remove('active'));
+});
+document.getElementById('reset').addEventListener('click',()=>{
+  setGraph({ad:0,sras:0,lras:0});
+  document.getElementById('title').textContent='Select a factor';
+  document.getElementById('subtitle').textContent='The graph will shift AD, SRAS or LRAS. The explanation will appear here.';
+  document.getElementById('icon').textContent='📊';
+  document.getElementById('chain').innerHTML='Choose a reason from the left panel. The graph uses the attached graph code unchanged; the buttons only set the graph values and add explanations.';
+  ['yImpact','growthImpact','uImpact','pImpact'].forEach(id=>{const e=document.getElementById(id);e.textContent='No change';e.className='v same';});
+  document.getElementById('examNote').textContent='The graph is a supplement. The main learning point is the written chain of analysis.';
+  document.querySelectorAll('.reason').forEach(b=>b.classList.remove('selected'));
+});
+document.querySelectorAll('.reason').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const c=cases[btn.dataset.case];
+    setGraph(c.graph);
+    document.querySelectorAll('.reason').forEach(b=>b.classList.remove('selected'));
+    btn.classList.add('selected');
+    document.getElementById('icon').textContent=c.icon;
+    document.getElementById('title').textContent=c.title;
+    document.getElementById('subtitle').textContent=c.subtitle;
+    document.getElementById('chain').innerHTML=c.chain;
+    const ids=['yImpact','growthImpact','uImpact','pImpact'];
+    c.impacts.forEach((v,i)=>{const e=document.getElementById(ids[i]);e.textContent=v;e.className='v '+c.classes[i];});
+    document.getElementById('examNote').textContent=c.note;
+  });
+});
+</script>
+</body>
+</html>
