@@ -32,7 +32,7 @@
   .sectionLabel{font-size:13px;font-weight:900;color:#4338ca;margin:12px 2px 8px}
   .hideBtn{width:100%;border:1px solid #d8b4fe;background:#faf5ff;color:#581c87;border-radius:14px;padding:11px;font-weight:900;cursor:pointer;margin-top:8px}
   .graphPanel{padding:12px}
-  .graphFrameWrap{height:620px;border:1px solid #dbe3ef;border-radius:18px;overflow:hidden;background:white}
+  .graphFrameWrap{height:650px;border:1px solid #dbe3ef;border-radius:18px;overflow:hidden;background:white}
   iframe{width:100%;height:100%;border:0;background:white}
   .bottom{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
   .explain{padding:16px}
@@ -49,7 +49,22 @@
   .note{font-size:13px;color:#475569;margin-top:12px;line-height:1.55}
   .miniTitle{font-weight:900;margin:0 0 8px}
   .reset{border:1px solid #cbd5e1;background:white;border-radius:12px;padding:10px 12px;font-weight:900;cursor:pointer;width:100%;margin-top:10px}
-  @media(max-width:980px){.layout{grid-template-columns:1fr}.bottom{grid-template-columns:1fr}.graphFrameWrap{height:520px}header{align-items:flex-start;flex-direction:column}}
+
+  .topSummary{display:grid;grid-template-columns:1fr;gap:10px;margin-bottom:10px}
+  .compactScenario,.compactImpact{background:#ffffff;border:1px solid #dbe3ef;border-radius:16px;padding:12px 14px;box-shadow:0 8px 18px rgba(15,23,42,.05)}
+  .compactScenario{display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:start}
+  .compactScenario .badge{width:36px;height:36px;border-radius:10px;font-size:20px}
+  .compactScenario h2{font-size:19px;line-height:1.1}
+  .compactScenario .note{font-size:13px;line-height:1.35;margin:1px 0 0}
+  .chain{grid-column:1 / -1;padding:10px 12px;margin-top:8px;font-size:14px;line-height:1.55;max-height:none;overflow:visible}
+  .topImpactLine{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:7px}
+  .miniImpact{border:1px solid #e2e8f0;border-radius:999px;padding:7px 10px;font-size:13px;font-weight:900;background:#f8fafc;white-space:nowrap}
+  .miniImpact span{font-weight:1000}
+  .miniImpact .k{color:#64748b;text-transform:uppercase;font-size:11px;letter-spacing:.03em;margin-right:4px}
+  .compactImpact .note{font-size:12.5px;line-height:1.35;margin:0}
+  .bottom{display:none!important}
+
+  @media(max-width:980px){.layout{grid-template-columns:1fr}.graphFrameWrap{height:520px}header{align-items:flex-start;flex-direction:column}}
 </style>
 </head>
 <body>
@@ -62,7 +77,7 @@
         <p>Use the graph as the visual support, then read the A-Level chain of analysis.</p>
       </div>
     </div>
-    <div class="pillTop">Buttons only · reasons hidden by default</div>
+    <div class="pillTop">Buttons only · full explanations visible</div>
   </header>
 
   <div class="layout">
@@ -124,6 +139,25 @@
     <main class="panel">
       <div class="panelTitle">2. Graph support</div>
       <div class="graphPanel">
+        <div class="topSummary">
+          <section class="compactScenario">
+            <div id="icon" class="badge">📊</div>
+            <div>
+              <h2 id="title">Select a factor</h2>
+              <div id="subtitle" class="note">The graph will shift AD, SRAS or LRAS.</div>
+              <div id="chain" class="chain">Choose a reason from the left panel. The graph uses the supplied graph code unchanged. Select a reason to display the full A-Level chain here.</div>
+            </div>
+          </section>
+          <section class="compactImpact">
+            <div class="topImpactLine">
+              <div class="miniImpact"><span class="k">GDP</span><span id="yImpact" class="same">No change</span></div>
+              <div class="miniImpact"><span class="k">Growth</span><span id="growthImpact" class="same">No change</span></div>
+              <div class="miniImpact"><span class="k">Unemployment</span><span id="uImpact" class="same">No change</span></div>
+              <div class="miniImpact"><span class="k">GPL</span><span id="pImpact" class="same">No change</span></div>
+            </div>
+            <div id="examNote" class="note">The graph is a supplement. The main learning point is the written chain of analysis.</div>
+          </section>
+        </div>
         <div class="graphFrameWrap">
           <iframe id="graphFrame" srcdoc="&lt;!DOCTYPE html&gt;
 &lt;html lang=&quot;en&quot;&gt;
@@ -384,32 +418,6 @@ draw();
     </main>
   </div>
 
-  <div class="bottom">
-    <section class="panel explain">
-      <div class="scenario">
-        <div id="icon" class="badge">📊</div>
-        <div>
-          <h2 id="title">Select a factor</h2>
-          <div id="subtitle" class="note" style="margin:2px 0 0">The graph will shift AD, SRAS or LRAS. The explanation will appear here.</div>
-        </div>
-      </div>
-      <div id="chain" class="chain">
-        Choose a reason from the left panel. The graph uses the attached graph code unchanged; the buttons only set the graph values and add explanations.
-      </div>
-      <div class="note">For A-Level answers, always write the chain: factor → component of AD/AS → curve shift → change in real national output/GDP → growth/unemployment/GPL effect.</div>
-    </section>
-
-    <section class="panel explain">
-      <p class="miniTitle">3. Impact summary</p>
-      <div class="impactGrid">
-        <div class="impact"><div class="k">Real GDP / Output</div><div id="yImpact" class="v same">No change</div></div>
-        <div class="impact"><div class="k">Economic growth</div><div id="growthImpact" class="v same">No change</div></div>
-        <div class="impact"><div class="k">Unemployment</div><div id="uImpact" class="v same">No change</div></div>
-        <div class="impact"><div class="k">GPL / Inflation</div><div id="pImpact" class="v same">No change</div></div>
-      </div>
-      <div id="examNote" class="note">The graph is a supplement. The main learning point is the written chain of analysis.</div>
-    </section>
-  </div>
 </div>
 
 <script>
@@ -573,7 +581,7 @@ document.getElementById('reset').addEventListener('click',()=>{
   document.getElementById('title').textContent='Select a factor';
   document.getElementById('subtitle').textContent='The graph will shift AD, SRAS or LRAS. The explanation will appear here.';
   document.getElementById('icon').textContent='📊';
-  document.getElementById('chain').innerHTML='Choose a reason from the left panel. The graph uses the attached graph code unchanged; the buttons only set the graph values and add explanations.';
+  document.getElementById('chain').innerHTML='Choose a reason from the left panel. The graph uses the supplied graph code unchanged. Select a reason to display the full A-Level chain here.';
   ['yImpact','growthImpact','uImpact','pImpact'].forEach(id=>{const e=document.getElementById(id);e.textContent='No change';e.className='v same';});
   document.getElementById('examNote').textContent='The graph is a supplement. The main learning point is the written chain of analysis.';
   document.querySelectorAll('.reason').forEach(b=>b.classList.remove('selected'));
